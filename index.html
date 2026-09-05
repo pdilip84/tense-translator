@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tense Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f7f7f8;
@@ -122,13 +125,22 @@
   }
 
   .result-meta {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     font-size: 0.9rem;
+    background: var(--header-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
   }
+  .result-meta > div + div { margin-top: 4px; }
   .result-meta strong { color: var(--text); }
   .result-meta .base {
     color: var(--accent);
     font-weight: 600;
+  }
+  .result-meta .gu {
+    display: block;
+    margin-top: 2px;
   }
 
   .table-wrap {
@@ -140,13 +152,13 @@
   table {
     border-collapse: collapse;
     width: 100%;
-    min-width: 780px;
+    min-width: 820px;
     font-size: 0.88rem;
   }
 
   th, td {
     border: 1px solid var(--border);
-    padding: 8px 10px;
+    padding: 10px;
     text-align: left;
     vertical-align: top;
   }
@@ -166,6 +178,20 @@
     color: var(--muted);
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.8rem;
+  }
+
+  .example-en {
+    display: block;
+  }
+
+  .gu {
+    display: block;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dashed var(--border);
+    font-family: 'Noto Sans Gujarati', 'Nirmala UI', 'Shruti', sans-serif;
+    color: #0f766e;
+    font-size: 0.95em;
   }
 
   footer {
@@ -208,7 +234,10 @@
   <div class="card" id="resultCard" style="display:none;">
     <div class="result-meta">
       <div><strong>Original input:</strong> <span id="origText"></span></div>
-      <div><strong>Base translation:</strong> <span class="base" id="baseText"></span></div>
+      <div>
+        <strong>Base translation:</strong> <span class="base" id="baseText"></span>
+        <span class="gu" id="baseTextGu" lang="gu"></span>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -254,6 +283,7 @@
   const resultBody = document.getElementById('resultBody');
   const origText = document.getElementById('origText');
   const baseText = document.getElementById('baseText');
+  const baseTextGu = document.getElementById('baseTextGu');
 
   // Only the model preference is worth remembering locally; no API key
   // lives in the browser at all anymore.
@@ -273,9 +303,31 @@
     errorBox.textContent = '';
   }
 
+  // Builds a cell showing the English example on top and its Gujarati
+  // translation stacked underneath (separated by a dashed divider).
+  function buildExampleCell(englishText, gujaratiText) {
+    const td = document.createElement('td');
+
+    const en = document.createElement('span');
+    en.className = 'example-en';
+    en.textContent = englishText || '—';
+    td.appendChild(en);
+
+    if (gujaratiText) {
+      const gu = document.createElement('span');
+      gu.className = 'gu';
+      gu.lang = 'gu';
+      gu.textContent = gujaratiText;
+      td.appendChild(gu);
+    }
+
+    return td;
+  }
+
   function renderResult(data) {
     origText.textContent = data.original_input || sentenceInput.value.trim();
     baseText.textContent = data.base_translation || '';
+    baseTextGu.textContent = data.base_translation_gu || '';
 
     resultBody.innerHTML = '';
     const rows = Array.isArray(data.rows) ? data.rows : [];
@@ -293,18 +345,14 @@
       tdActiveFormula.textContent = r.active_formula || defRow.active_formula;
       tr.appendChild(tdActiveFormula);
 
-      const tdActiveExample = document.createElement('td');
-      tdActiveExample.textContent = r.active_example || '—';
-      tr.appendChild(tdActiveExample);
+      tr.appendChild(buildExampleCell(r.active_example, r.active_example_gu));
 
       const tdPassiveFormula = document.createElement('td');
       tdPassiveFormula.className = 'formula';
       tdPassiveFormula.textContent = r.passive_formula || defRow.passive_formula;
       tr.appendChild(tdPassiveFormula);
 
-      const tdPassiveExample = document.createElement('td');
-      tdPassiveExample.textContent = r.passive_example || '—';
-      tr.appendChild(tdPassiveExample);
+      tr.appendChild(buildExampleCell(r.passive_example, r.passive_example_gu));
 
       resultBody.appendChild(tr);
     });

@@ -31,20 +31,24 @@ function buildPrompt(sentence) {
   const schema = {
     original_input: "string, the exact original user input",
     base_translation: "string, the sentence translated to clear standard English if needed, or cleaned up if it was already broken English",
+    base_translation_gu: "string, a natural, colloquial Gujarati script translation of base_translation",
     rows: TENSE_ROWS.map(function (r) {
       return {
         tense: r.tense,
         active_formula: r.active_formula,
-        active_example: "string",
+        active_example: "string, the English example sentence",
+        active_example_gu: "string, a natural, colloquial Gujarati script translation of active_example (Gujarati script, NOT Romanized/transliterated)",
         passive_formula: r.passive_formula,
-        passive_example: "string"
+        passive_example: "string, the English example sentence",
+        passive_example_gu: "string, a natural, colloquial Gujarati script translation of passive_example (Gujarati script, NOT Romanized/transliterated)"
       };
     })
   };
 
-  return "You are a grammar engine. The user will give you a single sentence, possibly written in Gujarati script or in broken/basic English.\n" +
+  return "You are a grammar engine and translator. The user will give you a single sentence, possibly written in Gujarati script or in broken/basic English.\n" +
     "Step 1: Silently determine the correct intended meaning of the sentence. If it is in Gujarati script, translate it into clear, natural, standard English. If it is already broken/basic English, clean it up into a clear standard English sentence with the same meaning. Keep the core subject/object/action intact.\n" +
-    "Step 2: Using that base English meaning, produce the same meaning rewritten in EACH of the following 11 tense/voice structures, in this exact order, for BOTH active and passive voice, strictly following the given formula pattern for each row. If a structure does not naturally fit the original meaning, still produce the best-effort grammatically correct sentence for that structure (never skip or leave blank).\n\n" +
+    "Step 2: Using that base English meaning, produce the same meaning rewritten in EACH of the following 11 tense/voice structures, in this exact order, for BOTH active and passive voice, strictly following the given formula pattern for each row. If a structure does not naturally fit the original meaning, still produce the best-effort grammatically correct sentence for that structure (never skip or leave blank).\n" +
+    "Step 3: For every English sentence you produce (the base translation, and every active/passive example), also give a natural, colloquial Gujarati translation IN GUJARATI SCRIPT (not Romanized/transliterated Gujarati) that a native Gujarati speaker would actually say, so a learner can compare the English tense structure side by side with its Gujarati meaning.\n\n" +
     rowsDesc + "\n\n" +
     "Return ONLY valid JSON, no markdown code fences, no explanations, no extra text, matching EXACTLY this schema (keep the same 11 tense names, in the same order, and keep the formula strings exactly as given):\n" +
     JSON.stringify(schema, null, 2) + "\n\n" +
