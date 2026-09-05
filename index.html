@@ -194,6 +194,20 @@
     font-size: 0.95em;
   }
 
+  .hl-red { color: #dc2626; font-weight: 600; }
+  .hl-red-bold { color: #dc2626; font-weight: 700; }
+  .hl-green-bold { color: #14532d; font-weight: 700; }
+
+  .legend {
+    margin-top: 12px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .legend span.hl-red-bold, .legend span.hl-green-bold { font-size: inherit; }
+
   footer {
     text-align: center;
     color: var(--muted);
@@ -253,6 +267,10 @@
         <tbody id="resultBody"></tbody>
       </table>
     </div>
+    <div class="legend">
+      <span><span class="hl-red-bold">being</span> → Continuous tenses always add "being" in the passive.</span>
+      <span><span class="hl-green-bold">has/have</span> / <span class="hl-green-bold">been</span> → Perfect tenses always use "has/have" (active) and "been" (passive).</span>
+    </div>
   </div>
 
   <footer>No key to enter — this page talks to a private server-side proxy that holds the Gemini API key.</footer>
@@ -273,6 +291,53 @@
     { tense: "Past Modals (should have/could have)", active_formula: "Subject + modal + have + V3", passive_formula: "Object + modal + have + been + V3" },
     { tense: "Future Compulsion (will have to)", active_formula: "Subject + will have to + V1", passive_formula: "Object + will have to be + V3" }
   ];
+
+  // Which words to color-highlight inside each tense's formula cells, so the
+  // underlying rule (e.g. "Continuous always needs 'being' in passive") jumps
+  // out visually. Keyed by the canonical tense name from TENSE_ROWS above.
+  const HIGHLIGHT_RULES = {
+    "Present Continuous": { passive: [{ word: 'being', cls: 'hl-red-bold' }] },
+    "Past Continuous": { passive: [{ word: 'being', cls: 'hl-red-bold' }] },
+    "Present Perfect": {
+      active: [{ word: 'has/have', cls: 'hl-green-bold' }],
+      passive: [{ word: 'has/have', cls: 'hl-green-bold' }, { word: 'been', cls: 'hl-green-bold' }]
+    },
+    "Past Perfect": {
+      passive: [{ word: 'been', cls: 'hl-green-bold' }]
+    },
+    "Future Perfect": {
+      active: [{ word: 'have', cls: 'hl-green-bold' }],
+      passive: [{ word: 'have', cls: 'hl-green-bold' }, { word: 'been', cls: 'hl-green-bold' }]
+    }
+  };
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // Wraps the first match of each rule's word (whole-word, case-insensitive)
+  // in a colored <span>. Text is escaped first so this is safe even if the
+  // formula text ever contains stray characters.
+  function applyHighlights(text, rules) {
+    let html = escapeHtml(text);
+    if (!rules) return html;
+    rules.forEach(function (rule) {
+      const escapedWord = rule.word.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+      const re = new RegExp('\\b(' + escapedWord + ')\\b', 'i');
+      html = html.replace(re, '<span class="' + rule.cls + '">$1</span>');
+    });
+    return html;
+  }
+
+  function highlightTenseName(name) {
+    if (/continuous/i.test(name)) {
+      return applyHighlights(name, [{ word: 'Continuous', cls: 'hl-red' }]);
+    }
+    return escapeHtml(name);
+  }
 
   const modelSelect = document.getElementById('modelSelect');
   const sentenceInput = document.getElementById('sentenceInput');
@@ -335,21 +400,22 @@
     TENSE_ROWS.forEach(function (defRow, idx) {
       const r = rows[idx] || {};
       const tr = document.createElement('tr');
+      const rules = HIGHLIGHT_RULES[defRow.tense];
 
       const tdTense = document.createElement('td');
-      tdTense.textContent = r.tense || defRow.tense;
+      tdTense.innerHTML = highlightTenseName(r.tense || defRow.tense);
       tr.appendChild(tdTense);
 
       const tdActiveFormula = document.createElement('td');
       tdActiveFormula.className = 'formula';
-      tdActiveFormula.textContent = r.active_formula || defRow.active_formula;
+      tdActiveFormula.innerHTML = applyHighlights(r.active_formula || defRow.active_formula, rules && rules.active);
       tr.appendChild(tdActiveFormula);
 
       tr.appendChild(buildExampleCell(r.active_example, r.active_example_gu));
 
       const tdPassiveFormula = document.createElement('td');
       tdPassiveFormula.className = 'formula';
-      tdPassiveFormula.textContent = r.passive_formula || defRow.passive_formula;
+      tdPassiveFormula.innerHTML = applyHighlights(r.passive_formula || defRow.passive_formula, rules && rules.passive);
       tr.appendChild(tdPassiveFormula);
 
       tr.appendChild(buildExampleCell(r.passive_example, r.passive_example_gu));
