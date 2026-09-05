@@ -18,10 +18,9 @@ const TENSE_ROWS = [
 ];
 
 const ALLOWED_MODELS = new Set([
-  "gemini-3.8-flash",
-  "gemini-3.7-flash",
   "gemini-3.6-flash",
-  "gemini-2.0-flash"
+  "gemini-3.7-flash",
+  "gemini-3.8-flash"
 ]);
 
 function buildPrompt(sentence) {
@@ -131,7 +130,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const model = ALLOWED_MODELS.has(body.model) ? body.model : 'gemini-3.8-flash';
+  const model = ALLOWED_MODELS.has(body.model) ? body.model : 'gemini-3.6-flash';
 
   const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
 
